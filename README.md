@@ -3,13 +3,13 @@ Die Smart Workbench soll als visuelle Untersetzung in einer Montagetätigkeit fu
 
 Aus diesem Grund muss zunächst ein Web Frontend für das Display sowie die Steuerung der Sensorik entwickelt werden. Ebenso ist die Kommunikation zwischen Web Frontend, Server und Raspberry Pi ein entscheidender Aspekt, welcher direkt bearbeitet und getestet wird. Hierfür wurden bereits einige Aufgaben erstellt und in die Planung aufgenommen.
 
-#Details
+# Details
 Das Frontend und damit das Dashboard des Projekts wird mit dem React Framework realisiert. 
 Zur Kommunikation wird ein MQTT Server genutzt. 
 Die Boxen werden mit einem 3D-Drucker erstellt und mit Sensoren bestückt, die über ein Raspberry Pi genutzt werden können. 
 
-#Contributing
+# Contributing
 Teilnahme am Projekt ist derzeit noch nicht möglich.
 
-#Installation
+# Installation
 Details zur Installation folgen.
