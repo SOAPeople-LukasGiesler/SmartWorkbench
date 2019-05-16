@@ -1,0 +1,3 @@
+[submodule "SmartWorkbenchFrontend"]
+	path = SmartWorkbenchFrontend
+	url = https://github.com/itsJannik/SmartWorkbenchFrontend
