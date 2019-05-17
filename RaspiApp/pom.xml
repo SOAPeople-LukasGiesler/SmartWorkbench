@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>de.dhbw.wwi.iot</groupId>
+    <artifactId>RaspiApp</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+
+        <!-- Konfiguration für das Remote Debugging auf dem Pi -->
+        <pi.address>192.168.1.171</pi.address>
+        <pi.username>mulder</pi.username>
+        <pi.password>xfiles</pi.password>
+        <pi.appdir>/home/mulder/raspiapp</pi.appdir>
+        <pi.mainclass>de.dhbw.wwi.iot.raspiapp.Main</pi.mainclass>
+
+        <!--
+            suspend=y führt dazu, dass die Anwendung erst losläuft, wenn man sich
+            mit dem NetBeans-Debugger verbindet. Soll die Anwendung hingegen sofort
+            loslaufen, muss der Wert auf suspend=n geändert werden.
+        -->
+        <pi.debugoptions>-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=0.0.0.0:8000,suspend=n</pi.debugoptions>
+    </properties>
+
+    <dependencies>
+        <!-- Paho: MQTT-Client -->
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+
+        <!-- GSON: Einfache JSON Serialisierung/Deserialisierung -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.5</version>
+        </dependency>
+        
+        <!-- Pi4J zum Ansteuern der GPIO-Pins (benötigt WiringPi in der Firmware) -->
+        <dependency>
+            <groupId>com.pi4j</groupId>
+            <artifactId>pi4j-core</artifactId>
+            <version>1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh</artifactId>
+                <version>3.0.0</version>
+            </extension>
+        </extensions>
+
+        <plugins>
+            <!-- =========================== -->
+            <!-- Ausführbare JAR-Datei bauen -->
+            <!-- =========================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.1</version>
+
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${pi.mainclass}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- ========================================================== -->
+            <!-- Als Abhängigkeiten benötigte JARs nach target/lib kopieren -->
+            <!-- ========================================================== -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.1.1</version>
+
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputDirectory>${project.build.directory}/lib/</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>debug-on-pi</id>
+            <activation>
+                <property>
+                    <name>pi.debug</name>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <!-- ============================================================ -->
+                    <!-- Code bei jeder Änderung auf den Pi kopieren und dort starten -->
+                    <!-- ============================================================ -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>wagon-maven-plugin</artifactId>
+                        <version>2.0.0</version>
+
+                        <executions>
+                            <!-- Alte Anwendungsdateien auf dem Pi löschen -->
+                            <execution>
+                                <id>clean-on-pi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>sshexec</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Vgl. https://www.mojohaus.org/wagon-maven-plugin/sshexec-mojo.html -->
+                                    <url>scp://${pi.username}:${pi.password}@${pi.address}</url>
+                                    <displayCommandOutputs>true</displayCommandOutputs>
+                                    <failOnError>false</failOnError>
+                                    <commands>
+                                        <command>rm -r ${pi.appdir}</command>
+                                    </commands>
+                                </configuration>
+                            </execution>
+
+                            <!-- Code auf den Pi kopieren -->
+                            <execution>
+                                <id>copy-to-pi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>upload</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Vgl. https://www.mojohaus.org/wagon-maven-plugin/upload-mojo.html -->
+                                    <url>scp://${pi.username}:${pi.password}@${pi.address}/${pi.appdir}</url>
+                                    <fromDir>${project.build.directory}</fromDir>
+                                    <includes>*.jar, lib/*.jar</includes>
+                                </configuration>
+                            </execution>
+
+                            <!-- Anwendung starten und Remote-Debugging zulassen -->
+                            <execution>
+                                <id>debug-on-pi</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>sshexec</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Vgl. https://www.mojohaus.org/wagon-maven-plugin/sshexec-mojo.html -->
+                                    <url>scp://${pi.username}:${pi.password}@${pi.address}/${pi.appdir}</url>
+                                    <displayCommandOutputs>true</displayCommandOutputs>
+                                    <commands>
+                                        <!-- FIXME: Nicht als Root ausführen -->
+                                        <command>echo ${pi.password} | sudo -S killall java; echo Warte auf Remote-Debugger</command>
+                                        <command>cd ${pi.appdir}; echo ${pi.password} | sudo -S REDIRECT_TTY=/dev/tty0 /opt/jdk/bin/java ${pi.debugoptions} -cp "${project.artifactId}-${project.version}.jar:./lib/*" ${pi.mainclass}</command>
+                                    </commands>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
