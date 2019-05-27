@@ -1,2 +1,6 @@
-smw\backend\ApplicationConfig.class
 smw\backend\HelloWorld.class
+smw\backend\Subscriber$1.class
+smw\backend\Subscriber.class
+smw\backend\Main.class
+smw\backend\Publisher.class
+smw\backend\ApplicationConfig.class

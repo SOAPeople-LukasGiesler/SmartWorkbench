@@ -17,6 +17,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PUT;
 import javax.ws.rs.core.MediaType;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 /**
  * REST Web Service
@@ -61,6 +62,10 @@ public class HelloWorld {
      */
     @PUT
     @Consumes(MediaType.TEXT_HTML)
-    public void putHtml(String content) {
+    public void putHtml(String content) throws MqttException {
+        
+        Publisher publisher = new Publisher();
+        publisher.publishMessage(content);
+        
     }
 }
