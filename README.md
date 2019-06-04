@@ -14,4 +14,4 @@ Die Boxen werden mit einem 3D-Drucker erstellt und mit Sensoren bestückt, die �
 Teilnahme am Projekt ist derzeit noch nicht möglich.
 
 ## Installation
-Details zur Installation folgen.p
+Details zur Installation folgen.
